@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ULAR TANGGA EDUKATIF</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0ea5a4;
+      --accent:#ff6b81;
+      --muted:#94a3b8;
+      --tile1:#111827;
+      --tile2:#0b1220;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Inter,Segoe UI,system-ui,Roboto,Arial; background:linear-gradient(180deg,var(--bg),#071129 120%); color:#e6eef8; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+    }
+    .hidden{display:none!important}
+    .start-screen{display:flex;flex-direction:column;align-items:center;gap:12px;background:rgba(255,255,255,0.04);padding:26px;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,0.5);width:640px;max-width:92%}
+    .start-screen h1{font-size:24px;margin:0;color:#e9fbfb;text-align:center}
+    .start-row{display:flex;gap:8px;align-items:center}
+    .start-screen select,.start-screen button,.start-screen input{padding:10px 12px;border:none;border-radius:8px;font-weight:600}
+    .start-screen select{background:#0ea5a4;color:white}
+    .start-screen button{background:var(--accent);color:white;cursor:pointer}
+    .start-screen .names{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+    .container{width:1100px;max-width:100%;display:grid;grid-template-columns:640px 1fr;gap:20px}
+    .board-wrap{background:linear-gradient(180deg,#081226 60%,#071629);padding:18px;border-radius:18px;box-shadow:0 10px 30px rgba(2,6,23,0.7)}
+    .board{width:600px;height:600px;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr);gap:3px;border-radius:12px;overflow:hidden;position:relative}
+    .tile{background:linear-gradient(180deg,var(--tile1),var(--tile2));display:flex;align-items:flex-start;justify-content:flex-end;padding:8px;font-size:12px;color:var(--muted);border-radius:6px;position:relative}
+    .tile:nth-child(odd){background:linear-gradient(180deg,#0b1323,#071427)}
+    .tile .num{font-weight:700;font-size:12px;color:#cfeff0}
+    .snake,.ladder{position:absolute;pointer-events:none;opacity:0.95}
+    .ladder{stroke:#f8b195;stroke-width:6;stroke-linecap:round}
+    .snake{stroke:#ff6b81;stroke-width:10;fill:none;stroke-linecap:round}
+    .pawns{position:absolute;left:0;top:0;pointer-events:none}
+    .pawn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#072022;box-shadow:0 6px 12px rgba(2,6,23,0.45);transform:translate3d(0,0,0);transition:transform 600ms cubic-bezier(.2,.9,.3,1),box-shadow 220ms;position:absolute}
+    .pawn.pop{transform:scale(1.12);box-shadow:0 12px 26px rgba(0,0,0,0.45)}
+    .pawn.a{background:linear-gradient(180deg,#ffd166,#ffb703)}
+    .pawn.b{background:linear-gradient(180deg,#7be495,#22c1c3)}
+    .pawn.c{background:linear-gradient(180deg,#a29bfe,#6c5ce7)}
+    .pawn.d{background:linear-gradient(180deg,#ff9ff3,#f368e0)}
+    .panel{background:rgba(255,255,255,0.03);padding:16px;border-radius:12px;display:flex;flex-direction:column;gap:12px;min-height:300px}
+    .title{font-size:18px;font-weight:700;color:#e9fbfb}
+    button.btn{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:10px;cursor:pointer;box-shadow:0 8px 18px rgba(255,107,129,0.12);font-weight:700}
+    .secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+    .dice{width:70px;height:70px;border-radius:14px;background:linear-gradient(180deg,#0b1220,#071427);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:inset 0 -8px 24px rgba(0,0,0,0.6)}
+    .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:50;background:rgba(2,6,23,0.45)}
+    .overlay.show{display:flex}
+    .card{width:520px;max-width:92%;background:linear-gradient(180deg,#fffaf0,#fff6f9);color:#072028;border-radius:16px;padding:18px;box-shadow:0 30px 90px rgba(3,6,23,0.6);transform:translateY(18px);opacity:0;transition:all 320ms}
+    .overlay.show .card{transform:none;opacity:1}
+    .question{font-weight:700;margin-bottom:8px}
+    .options{display:flex;flex-direction:column;gap:8px}
+    .option{background:white;padding:10px 12px;border-radius:10px;cursor:pointer;border:2px solid transparent}
+    .option:hover{transform:translateY(-4px);transition:transform 160ms}
+    .option.correct{border-color:rgba(34,197,94,0.6);box-shadow:0 10px 20px rgba(34,197,94,0.07)}
+    .option.wrong{border-color:rgba(239,68,68,0.6);box-shadow:0 10px 20px rgba(239,68,68,0.06)}
+    .explain{font-size:13px;color:#08303a;margin-top:8px}
+    .legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .legend .item{display:flex;gap:8px;align-items:center}
+    .chip{width:14px;height:14px;border-radius:4px}
+    @media(max-width:980px){.container{grid-template-columns:1fr}.start-screen{width:92%}}
+  </style>
+</head>
+<body>
+  <div class="start-screen" id="startScreen">
+    <h1>ULAR TANGGA EDUKATIF</h1>
+    <div class="start-row">
+      <label for="playerCount">Jumlah pemain:</label>
+      <select id="playerCount">
+        <option value="2">2 Pemain</option>
+        <option value="3">3 Pemain</option>
+        <option value="4">4 Pemain</option>
+      </select>
+      <button id="nameToggle" class="secondary">Atur Nama</button>
+    </div>
+    <div class="names hidden" id="namesContainer">
+      <!-- name inputs will be injected here -->
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button id="startBtn">Mulai Permainan</button>
+      <button id="loadSample" class="secondary">Reset ke Sampel</button>
+    </div>
+    <p style="max-width:560px;text-align:center;color:var(--muted);margin:0">
+      Game edukatif ini berisi pertanyaan tentang persetujuan, privasi, dukungan korban, dan pencegahan kekerasan seksual remaja. Soal dirancang non-ekspisit dan informatif.
+    </p>
+  </div>
+
+  <div class="container hidden" id="gameContainer">
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+      <svg id="over" width="600" height="600" viewBox="0 0 600 600" style="position:absolute;left:18px;top:18px;pointer-events:none"></svg>
+      <div class="pawns" id="pawns"></div>
+    </div>
+
+    <div class="panel">
+      <div class="title">Ular Tangga — Edukasi & Pencegahan Kekerasan Seksual Remaja</div>
+      <div class="turn">Giliran: <strong id="playerName">-</strong></div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="dice" id="dice">—</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn" id="rollBtn">GULUNG DADU</button>
+          <button class="secondary" id="resetBtn">Reset Game</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <strong>Aturan singkat:</strong>
+        <ul style="margin:6px 0 0 18px;color:var(--muted)">
+          <li>Mendarat pada kepala ular akan memunculkan kartu pertanyaan edukatif.</li>
+          <li>Jika jawab salah, turun ke ekor ular. Jika benar, dapat bonus kecil.</li>
+          <li>Capai petak 100 untuk menang.</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:auto">
+        <div class="legend">
+          <div class="item"><div class="chip" style="background:var(--accent)"></div>Ular (tanya)</div>
+          <div class="item"><div class="chip" style="background:#f8b195"></div>Tangga (naik cepat)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="card" id="card">
+      <h3 id="cardTitle">Pertanyaan Edukatif</h3>
+      <div class="question" id="qText"></div>
+      <div class="options" id="options"></div>
+      <div class="explain" id="explain" style="display:none"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="secondary" id="closeCard">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // --- Board & game config ---
+  const size = 10;
+  const total = size*size;
+  const boardEl = document.getElementById('board');
+  const over = document.getElementById('over');
+  const pawnsEl = document.getElementById('pawns');
+  const diceEl = document.getElementById('dice');
+  const rollBtn = document.getElementById('rollBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const playerNameEl = document.getElementById('playerName');
+
+  // special tiles
+  const snakes = {98:78,95:56,92:75,87:24,62:19,64:60,54:34,17:7};
+  const ladders = {4:14,9:31,20:38,28:84,40:59,51:67,63:81,71:91};
+
+  // educational questions
+  const questions = [
+    { q: 'Apa yang dimaksud dengan persetujuan (consent) dalam hubungan antar remaja?', opts: ['Persetujuan tidak perlu dibicarakan jika sudah dekat','Persetujuan adalah persetujuan jelas dan sukarela dari semua pihak'], a:1, explain: 'Persetujuan berarti semua pihak setuju secara sadar, sukarela, dan tanpa paksaan.'},
+    { q: 'Jika teman membagikan foto pribadi Anda tanpa izin, tindakan yang tepat adalah?', opts: ['Mengabaikannya','Bicara pada orang yang membagikan, minta menghapus, dan jika perlu lapor orang dewasa/otoritas'], a:1, explain: 'Membagikan konten pribadi tanpa izin melanggar privasi; minta dihapus dan cari bantuan jika perlu.'},
+    { q: 'Bagaimana cara mendukung teman yang mengalami pelecehan?', opts: ['Menyalahkan korban karena berani bercerita','Mendengarkan, percaya, bantu cari bantuan dari orang dewasa yang tepercaya'], a:1, explain: 'Memberi dukungan emosional dan membantu mengakses bantuan profesional atau orang dewasa tepercaya penting.'},
+    { q: 'Apa yang bukan tanda hubungan yang sehat?', opts: ['Saling percaya dan menghormati','Kontrol berlebihan, memantau dan membatasi kebebasan'], a:1, explain: 'Kontrol berlebihan dan pembatasan adalah tanda hubungan tidak sehat.'},
+    { q: 'Siapa yang bisa kamu hubungi jika merasa terancam atau menjadi korban kekerasan?', opts: ['Teman terpercaya, anggota keluarga, guru, layanan bantuan/instansi resmi','Hanya menyelesaikannya sendiri saja'], a:0, explain: 'Mencari bantuan dari orang tepercaya atau layanan profesional sangat dianjurkan.'},
+    { q: 'Mengapa penting memahami batasan (boundaries)?', opts: ['Untuk menghormati kenyamanan diri dan orang lain','Tidak penting dalam pertemanan'], a:0, explain: 'Batasan membantu menjaga rasa aman dan saling menghormati.'}
+  ];
+
+  // helpers: map tile number to center x,y in 600x600 coords
+  function tileCenter(n){
+    const idx = n-1;
+    const row = Math.floor(idx/size);
+    const colInRow = idx % size;
+    // numbering bottom-right to top-left zigzag
+    const y = 600 - (row+0.5)*(600/size);
+    const isRowLeftToRight = ((row % 2) === 0);
+    const x = isRowLeftToRight ? ((colInRow+0.5)*(600/size)) : (600 - (colInRow+0.5)*(600/size));
+    return [x,y];
+  }
+
+  // draw board tiles
+  function buildBoard(){
+    boardEl.innerHTML='';
+    let num = total;
+    for(let r=0;r<size;r++){
+      for(let c=0;c<size;c++){
+        const tile = document.createElement('div');
+        tile.className='tile';
+        tile.innerHTML = `<div class="num">${num}</div>`;
+        tile.dataset.index = num;
+        boardEl.appendChild(tile);
+        num--;
+      }
+    }
+  }
+
+  function drawPaths(){
+    over.innerHTML='';
+    // ladders
+    for(const [start,end] of Object.entries(ladders)){
+      const [x1,y1]=tileCenter(+start);
+      const [x2,y2]=tileCenter(+end);
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',`M ${x1} ${y1} L ${x2} ${y2}`);
+      path.setAttribute('class','ladder');
+      path.setAttribute('stroke-linecap','round');
+      over.appendChild(path);
+    }
+    // snakes
+    for(const [head,tail] of Object.entries(snakes)){
+      const [x1,y1]=tileCenter(+head);
+      const [x2,y2]=tileCenter(+tail);
+      const dx = (x2-x1), dy=(y2-y1);
+      const cx = x1 + dx*0.5 + (Math.random()*80-40);
+      const cy = y1 + dy*0.5 + (Math.random()*60-30);
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',`M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
+      path.setAttribute('class','snake');
+      over.appendChild(path);
+    }
+  }
+
+  // game state
+  let players = [];
+  let turn = 0;
+  let playerCount = 2;
+
+  // UI elements
+  const startScreen = document.getElementById('startScreen');
+  const gameContainer = document.getElementById('gameContainer');
+  const startBtn = document.getElementById('startBtn');
+  const playerCountSelect = document.getElementById('playerCount');
+  const namesContainer = document.getElementById('namesContainer');
+  const nameToggle = document.getElementById('nameToggle');
+  const loadSample = document.getElementById('loadSample');
+
+  nameToggle.addEventListener('click', ()=>{
+    namesContainer.classList.toggle('hidden');
+    if(!namesContainer.innerHTML.trim()) createNameInputs(parseInt(playerCountSelect.value));
+  });
+
+  playerCountSelect.addEventListener('change', (e)=>{
+    createNameInputs(parseInt(e.target.value));
+  });
+
+  function createNameInputs(n){
+    namesContainer.innerHTML='';
+    for(let i=0;i<n;i++){
+      const inp = document.createElement('input');
+      inp.placeholder = 'Nama Pemain ' + (i+1);
+      inp.id = 'nameInp' + i;
+      inp.style.minWidth = '140px';
+      namesContainer.appendChild(inp);
+    }
+    namesContainer.classList.remove('hidden');
+  }
+
+  loadSample.addEventListener('click', ()=>{
+    // reset and reload default sample game
+    location.reload();
+  });
+
+  startBtn.addEventListener('click', ()=>{
+    playerCount = parseInt(playerCountSelect.value);
+    // read names if provided
+    const names = [];
+    for(let i=0;i<playerCount;i++){
+      const el = document.getElementById('nameInp'+i);
+      names.push(el && el.value.trim() ? el.value.trim() : ('Pemain ' + (i+1)));
+    }
+    if(names.length===0){
+      for(let i=0;i<playerCount;i++) names.push('Pemain '+(i+1));
+    }
+    startGame(playerCount, names);
+    startScreen.classList.add('hidden');
+    gameContainer.classList.remove('hidden');
+  });
+
+  function startGame(count, names){
+    buildBoard();
+    drawPaths();
+    setupPlayers(count, names);
+    updateUI();
+  }
+
+  function setupPlayers(count, names){
+    // clear pawns
+    pawnsEl.innerHTML='';
+    players = [];
+    const colors = ['a','b','c','d'];
+    for(let i=0;i<count;i++){
+      const p = {name: names[i] || ('Pemain '+(i+1)), pos:0, color: colors[i], el:null};
+      const el = document.createElement('div');
+      el.className = 'pawn ' + p.color;
+      el.id = 'pawn'+i;
+      el.textContent = (i+1);
+      el.style.left = '0px';
+      el.style.top = '0px';
+      pawnsEl.appendChild(el);
+      p.el = el;
+      players.push(p);
+    }
+    // put pawns offboard visually at tile 1 corners
+    players.forEach((p,i)=>movePawnTo(i,1,true));
+    turn = 0;
+  }
+
+  function movePawnTo(playerIdx, tile, instant=false){
+    const p = players[playerIdx];
+    p.pos = tile;
+    const [x,y] = tileCenter(tile===0?1:tile);
+    // offset so multiple pawns don't fully overlap
+    const offset = getPawnOffset(playerIdx);
+    const left = x - 15 + offset.x;
+    const top = y - 15 + offset.y;
+    if(instant){
+      p.el.style.transition = 'none';
+      p.el.style.transform = `translate3d(${left}px,${top}px,0)`;
+      setTimeout(()=>p.el.style.transition = '');
+    } else {
+      p.el.style.transform = `translate3d(${left}px,${top}px,0)`;
+      p.el.classList.add('pop');
+      setTimeout(()=>p.el.classList.remove('pop'),700);
+    }
+  }
+
+  function getPawnOffset(idx){
+    // small grid offsets depending on number of players to avoid exact overlap
+    const offsets = [
+      {x:-10,y:-10},{x:10,y:-10},{x:-10,y:10},{x:10,y:10}
+    ];
+    return offsets[idx] || {x:0,y:0};
+  }
+
+  function resolveSpecial(pos){
+    if(ladders[pos]) return {type:'ladder',to:ladders[pos]};
+    if(snakes[pos]) return {type:'snake',to:snakes[pos]};
+    return null;
+  }
+
+  // question modal
+  const overlay = document.getElementById('overlay');
+  const qText = document.getElementById('qText');
+  const optionsEl = document.getElementById('options');
+  const explainEl = document.getElementById('explain');
+  const closeCard = document.getElementById('closeCard');
+
+  let awaitingQuestion = false;
+
+  function showQuestionFor(playerIdx, onDone){
+    awaitingQuestion = true;
+    const q = questions[Math.floor(Math.random()*questions.length)];
+    qText.textContent = q.q;
+    optionsEl.innerHTML = '';
+    explainEl.style.display='none';
+    explainEl.textContent='';
+    q.opts.forEach((opt,i)=>{
+      const d = document.createElement('div');
+      d.className='option';
+      d.textContent = opt;
+      d.addEventListener('click', ()=>{
+        optionsEl.querySelectorAll('.option').forEach(x=>x.style.pointerEvents='none');
+        if(i===q.a){
+          d.classList.add('correct');
+          explainEl.textContent = q.explain; explainEl.style.display='block';
+          setTimeout(()=>{ overlay.classList.remove('show'); awaitingQuestion=false; onDone(true); },900);
+        } else {
+          d.classList.add('wrong');
+          explainEl.textContent = q.explain; explainEl.style.display='block';
+          setTimeout(()=>{ overlay.classList.remove('show'); awaitingQuestion=false; onDone(false); },900);
+        }
+      });
+      optionsEl.appendChild(d);
+    });
+    overlay.classList.add('show');
+  }
+
+  closeCard.addEventListener('click', ()=>{ overlay.classList.remove('show'); awaitingQuestion=false; });
+
+  // dice & turns
+  function rollDice(){
+    return Math.floor(Math.random()*6)+1;
+  }
+
+  function updateUI(){
+    playerNameEl.textContent = players[turn].name;
+  }
+
+  async function takeTurn(){
+    if(awaitingQuestion) return;
+    rollBtn.disabled = true;
+    const d = rollDice();
+    diceEl.textContent = d;
+    diceEl.animate([{transform:'rotate(0deg)'},{transform:'rotate(360deg)'}],{duration:600,iterations:1});
+    await delay(650);
+
+    let dest = players[turn].pos + d;
+    if(dest>100) dest = players[turn].pos; // must land exactly
+
+    // animate step by step
+    const steps = Math.abs(dest - players[turn].pos);
+    for(let s=1;s<=steps;s++){
+      const newPos = players[turn].pos + 1;
+      movePawnTo(turn, newPos);
+      players[turn].pos = newPos;
+      await delay(220);
+    }
+
+    // check special
+    const special = resolveSpecial(players[turn].pos);
+    if(special && special.type==='ladder'){
+      await delay(280);
+      movePawnTo(turn, special.to);
+      players[turn].pos = special.to;
+      await delay(300);
+    }
+
+    if(special && special.type==='snake'){
+      // show question
+      await delay(200);
+      showQuestionFor(turn, (correct)=>{
+        if(correct){
+          // reward: small nudge forward 1 if possible
+          const bonus = Math.min(100, players[turn].pos+1);
+          movePawnTo(turn, bonus);
+          players[turn].pos = bonus;
+        } else {
+          // incorrect -> slide to tail
+          movePawnTo(turn, special.to);
+          players[turn].pos = special.to;
+        }
+        // win check
+        if(players[turn].pos>=100){ setTimeout(()=>{ alert(players[turn].name + ' MENANG! 🎉'); resetGame(); },200); return; }
+        // next turn
+        turn = (turn+1)%players.length; updateUI(); rollBtn.disabled=false;
+      });
+      return; // will re-enable via callback
+    }
+
+    // win check
+    if(players[turn].pos>=100){ alert(players[turn].name + ' MENANG! 🎉'); resetGame(); return; }
+
+    // next turn
+    turn = (turn+1)%players.length; updateUI(); rollBtn.disabled=false;
+  }
+
+  rollBtn.addEventListener('click', ()=>takeTurn());
+  resetBtn.addEventListener('click', ()=>resetGame());
+
+  function resetGame(){
+    players.forEach((p,i)=>{ p.pos=0; p.el.style.transform='translate3d(0,0,0)'; });
+    // place back to tile 1 visually
+    players.forEach((p,i)=>movePawnTo(i,1,true));
+    turn = 0; diceEl.textContent='—'; updateUI(); rollBtn.disabled=false;
+  }
+
+  function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+  // initial build for preview (not started)
+  buildBoard();
+  drawPaths();
+
+  // put a small preview pawn for two players to show layout (not the real game state)
+  // (They will be replaced when game starts)
+  const previewColors = ['a','b'];
+  pawnsEl.innerHTML='';
+  for(let i=0;i<2;i++){
+    const el = document.createElement('div');
+    el.className = 'pawn ' + previewColors[i];
+    el.style.transform = 'translate3d(14px,' + (560 + i*34) + 'px,0)';
+    el.textContent = i+1;
+    pawnsEl.appendChild(el);
+  }
+</script>
+</body>
+</html>
